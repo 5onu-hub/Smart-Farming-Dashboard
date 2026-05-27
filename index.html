@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Farming Dashboard — Complete</title>
+
+  <!--
+    Single-file Project:
+    - Inline CSS and JS for easy copy-paste
+    - Farmer-friendly text, big buttons, mobile friendly
+    - Testing section + popup modal + translate widget + forms
+    - LocalStorage used to persist crops (so demo works offline)
+    - Dummy fetch for weather (you can replace with real API)
+    - Comments throughout for learning & customization
+  -->
+
+  <style>
+    /* --------------------------------------------
+       BASE / LAYOUT
+       -------------------------------------------- */
+    :root{
+      --green:#2e8b57;
+      --green-dark:#1f6b42;
+      --muted:#6b6b6b;
+      --card:#ffffff;
+      --bg:#f4f7f6;
+      --accent:#ffd54f;
+      --danger:#e53935;
+      --radius:12px;
+      --max-width:1100px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:#222;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    header{
+      background: linear-gradient(90deg, var(--green) 0%, #3aa46a 100%);
+      color:#fff;
+      padding:18px 20px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .header-left{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .brand-logo{
+      width:56px;
+      height:56px;
+      border-radius:10px;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,0.15);
+      background:linear-gradient(180deg,#fff0,#0000);
+      padding:2px;
+    }
+
+    .brand-title h1{
+      margin:0;
+      font-size:20px;
+      line-height:1;
+      letter-spacing:0.3px;
+    }
+
+    .brand-title p{
+      margin:2px 0 0 0;
+      font-size:12px;
+      opacity:0.95;
+    }
+
+    .header-right{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+
+    .auth-btn, .profile-logo {
+      background:#fff;
+      color:var(--green);
+      border:none;
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+      box-shadow:0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    .profile-logo{
+      width:44px;
+      height:44px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      font-size:14px;
+      border-radius:999px;
+      overflow:hidden;
+      object-fit:cover;
+    }
+
+    /* Translate widget placement */
+    #google_element{
+      position:fixed;
+      top:14px;
+      right:82px;
+      z-index:1200;
+      font-size:13px;
+    }
+
+    /* --------------------------------------------
+       PAGE CONTAINER & GRID
+       -------------------------------------------- */
+    main{
+      max-width:var(--max-width);
+      margin:20px auto;
+      padding:0 16px 60px 16px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      align-items:start;
+    }
+
+    @media (max-width:980px){
+      .grid{grid-template-columns:1fr}
+      #google_element{right:12px; top:86px}
+    }
+
+    /* --------------------------------------------
+       CARD
+       -------------------------------------------- */
+    section.card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 6px 18px rgba(12,20,12,0.04);
+      border:1px solid rgba(0,0,0,0.03);
+    }
+
+    section.card h2{
+      margin:0 0 8px 0;
+      color:var(--green-dark);
+      font-size:18px;
+    }
+
+    section.card p.lead{
+      margin:0 0 12px 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    /* --------------------------------------------
+       FORMS & INPUTS
+       -------------------------------------------- */
+    form{display:flex;flex-direction:column;gap:10px}
+    label{font-size:13px;color:#333;font-weight:600}
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="password"], textarea, select{
+      width:100%;
+      padding:12px 10px;
+      border-radius:8px;
+      border:1px solid #e3e6e6;
+      font-size:14px;
+      outline:none;
+      transition:box-shadow .15s, border-color .15s;
+    }
+    input:focus, textarea:focus, select:focus{
+      box-shadow:0 6px 18px rgba(46,139,87,0.06);
+      border-color:var(--green);
+    }
+    textarea{min-height:96px; resize:vertical}
+
+    .row{display:flex;gap:10px;align-items:center}
+    .row .col{flex:1}
+
+    button{
+      padding:12px 14px;
+      border-radius:10px;
+      border:none;
+      background:var(--green);
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .08s ease, box-shadow .12s ease;
+      box-shadow:0 6px 18px rgba(46,139,87,0.12);
+      font-size:15px;
+    }
+    button:hover{transform:translateY(-2px)}
+    button.secondary{
+      background:#fff;color:var(--green); border:1px solid rgba(46,139,87,0.12);
+      box-shadow:none;font-weight:700;
+    }
+    button.ghost{
+      background:transparent;color:var(--green); border:1px dashed rgba(46,139,87,0.12);
+      box-shadow:none;
+    }
+
+    /* --------------------------------------------
+       LISTS & CROP ITEMS
+       -------------------------------------------- */
+    #crop-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+    .crop-item{
+      background:linear-gradient(180deg,#fff,#fbfffb);
+      padding:12px;border-radius:10px;border:1px solid rgba(0,0,0,0.03);
+      display:flex;gap:12px;align-items:center;justify-content:space-between;
+    }
+    .crop-left{display:flex;gap:12px;align-items:center}
+    .crop-badge{width:46px;height:46px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#4b3a00}
+    .crop-meta{font-size:13px}
+    .crop-actions{display:flex;gap:8px;align-items:center}
+
+    /* --------------------------------------------
+       RIGHT COLUMN PANELS
+       -------------------------------------------- */
+    .right-column .mini-card{
+      background:#fff;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(0,0,0,0.03);
+    }
+    .mini-card h4{margin:0 0 6px 0;font-size:14px;color:var(--green-dark)}
+
+    /* --------------------------------------------
+       TESTING SECTION
+       -------------------------------------------- */
+    .testing-buttons{display:flex;flex-wrap:wrap;gap:8px}
+    .testing-buttons button{flex:1 1 48%;min-width:120px;padding:10px;font-size:14px;border-radius:8px}
+
+    /* --------------------------------------------
+       MODAL
+       -------------------------------------------- */
+    .modal{
+      display:none;
+      position:fixed;
+      z-index:2200;
+      left:0;top:0;
+      width:100%;height:100%;
+      background:rgba(0,0,0,0.45);
+      align-items:center;justify-content:center;
+      padding:20px;
+    }
+
+    .modal.show{display:flex}
+    .modal-box{
+      width:100%; max-width:620px;
+      background:#fff;border-radius:12px;padding:18px;box-shadow:0 10px 40px rgba(17,24,17,0.18);
+      position:relative;
+    }
+    .modal-close{
+      position:absolute;right:12px;top:12px;border:none;background:transparent;font-size:22px;cursor:pointer;color:#666;
+    }
+
+    /* --------------------------------------------
+       TABLE / PRICES
+       -------------------------------------------- */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:13px}
+    th{color:var(--muted);font-weight:700}
+
+    /* --------------------------------------------
+       FOOTER
+       -------------------------------------------- */
+    footer{
+      margin-top:22px;
+      text-align:center;padding:18px;color:#666;font-size:13px;
+    }
+
+    /* small helpers */
+    .muted{color:var(--muted);font-size:13px}
+    .center{text-align:center}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#f3fff6;color:var(--green);font-weight:700;font-size:12px}
+
+    /* long content spacing to reach file length & readability */
+    /* (these comments also help you modify easily) */
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <img class="brand-logo" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='100%' height='100%' rx='10' ry='10' fill='%232e8b57'/><text x='50%' y='55%' font-size='46' text-anchor='middle' fill='white' font-family='Arial' dy='.3em'>Ag</text></svg>" alt="logo">
+      <div class="brand-title">
+        <h1>Smart Farming Dashboard</h1>
+        <p>Simple tools for farmers — weather, crops, soil tests & more</p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div id="google_element" aria-hidden="false"></div>
+      <button class="auth-btn" id="loginBtn">Login / Register</button>
+      <div class="profile-logo" id="profileBtn" title="Profile">S</div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <div class="grid">
+
+      <!-- LEFT: MAIN CONTENT -->
+      <div>
+
+        <!-- WEATHER CARD -->
+        <section class="card" id="weather-card" aria-labelledby="weather-title">
+          <h2 id="weather-title">Real-Time Weather</h2>
+          <p class="lead">Enter your village/city name and get a quick weather summary. (Demo uses fake data; replace with real API key.)</p>
+
+          <form id="weather-form" aria-label="Weather form">
+            <div class="row">
+              <div class="col">
+                <input type="text" id="city-input" placeholder="e.g., Lucknow, Kanpur, Jaipur" required>
+              </div>
+              <div style="width:140px">
+                <button type="submit">Get Weather</button>
+              </div>
+            </div>
+          </form>
+
+          <div id="weather-result" style="margin-top:12px;">
+            <div class="muted">Weather info will appear here.</div>
+          </div>
+        </section>
+
+        <!-- CROP TRACKER -->
+        <section class="card" id="crop-tracker-card" aria-labelledby="crop-tracker-title">
+          <h2 id="crop-tracker-title">Crop Tracker</h2>
+          <p class="lead">Add crops you're growing. Save images and notes. Data stored locally in browser for demo.</p>
+
+          <form id="crop-form" enctype="multipart/form-data">
+            <label for="crop-select">Select a crop</label>
+            <select id="crop-select" required>
+              <option value="" disabled selected>Select a crop</option>
+              <option>Wheat</option>
+              <option>Rice</option>
+              <option>Maize</option>
+              <option>Barley</option>
+              <option>Millets</option>
+              <option>Sugarcane</option>
+              <option>Cotton</option>
+              <option>Soybean</option>
+              <option>Groundnut</option>
+              <option>Sunflower</option>
+              <option>Mustard</option>
+              <option>Pulses</option>
+              <option>Tea</option>
+              <option>Coffee</option>
+              <option>Fruits</option>
+              <option>Vegetables</option>
+            </select>
+
+            <div class="row">
+              <div class="col">
+                <label for="soil-select">Soil Type</label>
+                <select id="soil-select" required>
+                  <option value="" disabled selected>Select soil type</option>
+                  <option>Loamy</option>
+                  <option>Clay</option>
+                  <option>Sandy</option>
+                  <option>Silty</option>
+                  <option>Peaty</option>
+                  <option>Chalky</option>
+                  <option>Saline</option>
+                </select>
+              </div>
+              <div style="width:140px">
+                <label>&nbsp;</label>
+                <button id="add-crop-btn" type="button">Add Crop</button>
+              </div>
+            </div>
+          </form>
+
+          <div style="margin-top:12px;">
+            <label for="crop-image-upload">Upload Crop Image (optional)</label>
+            <form id="crop-image-form" enctype="multipart/form-data">
+              <div class="row">
+                <input type="file" id="crop-image-upload" accept="image/*">
+                <div style="width:140px">
+                  <button type="submit">Upload Image</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <ul id="crop-list" aria-live="polite" style="margin-top:12px"></ul>
+        </section>
+
+        <!-- RECOMMENDATIONS -->
+        <section class="card" id="recommendation-card">
+          <h2>Recommendations</h2>
+          <p class="lead">Get fertilizer, pesticide and crop suggestions. These are simple rule-based suggestions for demo.</p>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <h4 style="margin:0 0 6px 0">Fertilizer</h4>
+              <p id="fertilizer-recommendation" class="muted">Select a crop from Crop Tracker then click below.</p>
+              <button id="get-fertilizer-btn" class="secondary" style="margin-top:8px">Get Fertilizer Recommendation</button>
+            </div>
+
+            <div style="flex:1;min-width:220px">
+              <h4 style="margin:0 0 6px 0">Pesticide</h4>
+              <p id="pesticide-recommendation" class="muted">Select a crop from Crop Tracker then click below.</p>
+              <button id="get-pesticide-btn" class="secondary" style="margin-top:8px">Get Pesticide Recommendation</button>
+            </div>
+
+            <div style="flex:1;min-width:220px">
+              <h4 style="margin:0 0 6px 0">Planting Time</h4>
+              <p id="time-recommendation" class="muted">Select a crop to see planting & harvesting months.</p>
+              <button id="get-time-btn" class="secondary" style="margin-top:8px">Get Time Recommendation</button>
+            </div>
+          </div>
+
+          <hr style="margin:14px 0;border:none;border-top:1px solid #f0f0f0">
+
+          <h4 style="margin:0 0 6px 0">Crop Finder by Soil & Temp</h4>
+          <form id="crop-recommendation-form">
+            <div class="row">
+              <div class="col">
+                <select id="recommend-soil" required>
+                  <option value="" disabled selected>Soil Type</option>
+                  <option>Loamy</option>
+                  <option>Clay</option>
+                  <option>Sandy</option>
+                  <option>Peaty</option>
+                  <option>Silty</option>
+                  <option>Chalky</option>
+                </select>
+              </div>
+              <div style="width:140px">
+                <select id="recommend-temp" required>
+                  <option value="" disabled selected>Temp</option>
+                  <option value="20">20°C</option>
+                  <option value="25">25°C</option>
+                  <option value="30">30°C</option>
+                  <option value="35">35°C</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:8px">
+              <button type="submit" class="ghost">Find Crops</button>
+            </div>
+          </form>
+          <div id="crop-recommendation-result" style="margin-top:12px" class="muted">Crop suggestions will appear here.</div>
+        </section>
+
+        <!-- DISEASE DETECTION -->
+        <section class="card" id="disease-card">
+          <h2>Crop Disease Detection</h2>
+          <p class="lead">Upload an image or describe symptoms. (Demo only — no real ML model here.)</p>
+
+          <form id="disease-detection-form" enctype="multipart/form-data">
+            <input type="file" id="disease-image" accept="image/*">
+            <select id="disease-symptoms">
+              <option value="" disabled selected>Select Symptoms</option>
+              <option value="yellow leaves">Yellow Leaves</option>
+              <option value="brown spots">Brown Spots</option>
+              <option value="wilting">Wilting</option>
+              <option value="stunted growth">Stunted Growth</option>
+              <option value="leaf curling">Leaf Curling</option>
+              <option value="white powdery coating">White Powdery Coating</option>
+              <option value="black mold">Black Mold</option>
+            </select>
+            <textarea id="custom-symptoms" placeholder="Describe symptoms (optional)"></textarea>
+
+            <div style="display:flex;gap:10px">
+              <button type="submit">Detect Disease</button>
+              <button type="button" id="clear-disease" class="secondary">Clear</button>
+            </div>
+          </form>
+
+          <div id="disease-detection-result" style="margin-top:12px" class="muted">Detection results will show here.</div>
+        </section>
+
+        <!-- VALUE ADDITION / INSURANCE / CALCULATOR -->
+        <section class="card" id="value-addition">
+          <h2>Value Addition & Insurance</h2>
+          <p class="lead">Ideas to increase income, and simple insurance info calculator for area.</p>
+
+          <form id="value-addition-form">
+            <label for="value-crop">Choose Crop</label>
+            <select id="value-crop" required>
+              <option value="" disabled selected>Select Crop</option>
+              <option>Wheat</option><option>Rice</option><option>Tomato</option><option>Potato</option><option>Millets</option>
+            </select>
+
+            <div style="display:flex;gap:10px">
+              <div style="flex:1">
+                <label>Land Area (hectares)</label>
+                <input type="number" id="land-area" step="0.1" min="0">
+              </div>
+              <div style="width:160px;align-self:end">
+                <button type="submit">Get Ideas</button>
+              </div>
+            </div>
+          </form>
+
+          <p id="value-addition-result" style="margin-top:12px" class="muted">Value addition ideas will appear here.</p>
+        </section>
+
+        <!-- TESTING SECTION (MERGED) -->
+        <section class="card" id="testing-full-section">
+          <h2>Testing</h2>
+          <p class="lead">Quick tests you can do on field samples. Click a test to view steps or see suggested kits.</p>
+
+          <div class="testing-buttons">
+            <button id="soil-testing-btn">Soil Testing</button>
+            <button id="ph-testing-btn">pH Testing</button>
+            <button id="moisture-testing-btn">Moisture Testing</button>
+            <button id="nutrient-testing-btn">Nutrient Testing</button>
+            <button id="pesticide-testing-btn">Pesticide Testing</button>
+          </div>
+
+          <p id="testing-instructions" style="margin-top:12px" class="muted">Choose a test to see instructions in the popup.</p>
+        </section>
+
+      </div>
+
+      <!-- RIGHT: SIDEBAR -->
+      <aside class="right-column">
+
+        <!-- QUICK SUMMARY -->
+        <div class="mini-card card" style="margin-bottom:12px">
+          <h4>Quick Summary</h4>
+          <p class="muted">Crops tracked: <span id="tracked-count">0</span></p>
+          <p class="muted">Last weather: <span id="last-weather">N/A</span></p>
+          <p class="muted">Saved locally: <span id="local-status">Yes</span></p>
+        </div>
+
+        <!-- MARKET PRICES -->
+        <div class="mini-card card" id="market-prices">
+          <h4>Market Prices (Demo)</h4>
+          <p class="muted">Click to load example prices from a demo dataset.</p>
+          <button id="get-prices-btn" class="secondary">Get Crop Prices</button>
+          <div id="prices-list" style="margin-top:10px"></div>
+        </div>
+
+        <!-- SOIL RECOMMENDATION -->
+        <div class="mini-card card">
+          <h4>Soil Recommendation</h4>
+          <p class="muted">Perfect soil type for common crops</p>
+          <table>
+            <thead><tr><th>Crop</th><th>Soil</th></tr></thead>
+            <tbody>
+              <tr><td>Wheat</td><td>Loamy</td></tr>
+              <tr><td>Rice</td><td>Clay</td></tr>
+              <tr><td>Maize</td><td>Loamy</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TIPS -->
+        <div class="mini-card card">
+          <h4>Farming Tips</h4>
+          <p class="muted">Short tips for better yield</p>
+          <ul style="padding-left:16px;margin:8px 0 0 0" class="muted">
+            <li>Rotate crops to avoid pests</li>
+            <li>Use certified seeds</li>
+            <li>Drip irrigation saves water</li>
+            <li>Soil test before major fertilizer use</li>
+          </ul>
+        </div>
+
+        <!-- CONTACT / HELP -->
+        <div class="mini-card card">
+          <h4>Need Help?</h4>
+          <p class="muted">Call your local Krishi Vigyan Kendra (KVK) or use this quick guide.</p>
+          <button id="help-btn" class="secondary">Quick Guide</button>
+        </div>
+
+      </aside>
+    </div>
+  </main>
+
+  <!-- POPUP MODAL -->
+  <div class="modal" id="popupModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <button class="modal-close" id="modalCloseBtn" title="Close">&times;</button>
+      <h3 id="modalTitle">Recommendation</h3>
+      <div id="modalContent" style="margin-top:10px">
+        <p class="muted">Loading...</p>
+      </div>
+      <div style="margin-top:12px;text-align:right">
+        <button id="modalOkBtn" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&copy; 2025 Agriculture Solutions — Demo. Data stored locally (browser).</p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    /* ===========================
+       Helper Utilities & State
+       =========================== */
+
+    // Local storage keys
+    const LS_CROPS = 'ag_crops_v1';
+
+    // Simple UI helpers
+    function $(sel){return document.querySelector(sel)}
+    function $all(sel){return Array.from(document.querySelectorAll(sel))}
+
+    // Toast-like console function (simple)
+    function infoLog(msg){ console.info('[App] '+msg) }
+
+    // App state (in-memory)
+    const state = {
+      crops: [], // {id, crop, soil, imageData (base64), addedAt}
+      lastWeather: null
+    };
+
+    // Initialize: load saved crops
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(LS_CROPS)
+        if(raw){
+          state.crops = JSON.parse(raw);
+        } else {
+          state.crops = [];
+        }
+      }catch(e){
+        console.warn('Could not load state', e);
+        state.crops = [];
+      }
+    }
+
+    // Save to localStorage
+    function saveState(){
+      try{
+        localStorage.setItem(LS_CROPS, JSON.stringify(state.crops));
+      }catch(e){
+        console.warn('Could not save state', e);
+      }
+    }
+
+    // Generate simple id
+    function genId(){
+      return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)
+    }
+
+    // Format date
+    function fmtDate(ts){ return new Date(ts).toLocaleString() }
+
+    /* ===========================
+       UI Rendering
+       =========================== */
+    function renderCrops(){
+      const ul = $('#crop-list');
+      ul.innerHTML = '';
+      if(!state.crops.length){
+        const li = document.createElement('div');
+        li.className = 'muted';
+        li.innerText = 'No crops added yet. Add a crop using the form above.';
+        ul.appendChild(li);
+      } else {
+        state.crops.forEach(c=>{
+          const li = document.createElement('li');
+          li.className = 'crop-item';
+          li.innerHTML = `
+            <div class="crop-left">
+              <div class="crop-badge">${c.crop.charAt(0)||'C'}</div>
+              <div>
+                <div class="crop-meta"><strong>${c.crop}</strong> <span class="muted">(${c.soil})</span></div>
+                <div class="muted" style="font-size:12px">${fmtDate(c.addedAt)}</div>
+              </div>
+            </div>
+            <div class="crop-actions">
+              <button class="secondary view-btn" data-id="${c.id}">View</button>
+              <button class="ghost edit-btn" data-id="${c.id}">Edit</button>
+              <button class="ghost" data-id="${c.id}" style="color:${'#e35'}" title="Delete" onclick="deleteCrop('${c.id}')">Delete</button>
+            </div>
+          `;
+          ul.appendChild(li);
+        })
+      }
+      $('#tracked-count').innerText = state.crops.length;
+    }
+
+    // delete crop
+    function deleteCrop(id){
+      const idx = state.crops.findIndex(x=>x.id===id);
+      if(idx>-1){
+        if(confirm('Are you sure you want to remove this crop?')) {
+          state.crops.splice(idx,1);
+          saveState();
+          renderCrops();
+        }
+      }
+    }
+
+    // modal helpers
+    const modal = $('#popupModal');
+    const modalTitle = $('#modalTitle');
+    const modalContent = $('#modalContent');
+
+    function showModal(title, html){
+      modalTitle.innerText = title;
+      modalContent.innerHTML = html;
+      modal.classList.add('show');
+    }
+    function closeModal(){
+      modal.classList.remove('show');
+    }
+
+    // Wire modal close buttons
+    $('#modalCloseBtn').addEventListener('click', closeModal);
+    $('#modalOkBtn').addEventListener('click', closeModal);
+
+    /* ===========================
+       WEATHER (Demo)
+       Replace with real API (OpenWeatherMap etc.)
+       =========================== */
+    $('#weather-form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const city = $('#city-input').value.trim();
+      if(!city) return alert('Please enter city name');
+      // Demo: simulate fetch
+      $('#weather-result').innerHTML = '<div class="muted">Fetching weather... (demo)</div>';
+      await new Promise(r=>setTimeout(r,700)); // simulate latency
+
+      // Dummy algorithm for simple demo:
+      const temps = [22,24,26,28,30,18,20];
+      const rnd = temps[Math.floor(Math.random()*temps.length)];
+      const demo = {
+        city,
+        temp: rnd,
+        condition: rnd>28 ? 'Hot' : rnd>24 ? 'Warm' : rnd>20 ? 'Mild' : 'Cool',
+        humidity: 45 + Math.floor(Math.random()*30),
+        wind: 4 + Math.floor(Math.random()*15)
+      };
+      state.lastWeather = demo;
+      $('#last-weather').innerText = `${demo.temp}°C, ${demo.condition}`;
+      $('#weather-result').innerHTML = `
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="pill">${demo.city}</div>
+          <div>
+            <div style="font-size:18px;font-weight:700">${demo.temp}°C — ${demo.condition}</div>
+            <div class="muted">Humidity: ${demo.humidity}% • Wind: ${demo.wind} km/h</div>
+          </div>
+        </div>
+      `;
+      infoLog(`Weather fetched for ${city}`);
+    });
+
+    /* ===========================
+       CROP TRACKER HANDLERS
+       =========================== */
+    loadState();
+    renderCrops();
+
+    $('#add-crop-btn').addEventListener('click', ()=>{
+      const crop = $('#crop-select').value;
+      const soil = $('#soil-select').value;
+      if(!crop) return alert('Please select crop');
+      if(!soil) return alert('Please select soil type');
+
+      const newCrop = {
+        id: genId(),
+        crop,
+        soil,
+        imageData: null,
+        notes: '',
+        addedAt: Date.now()
+      };
+      state.crops.unshift(newCrop);
+      saveState();
+      renderCrops();
+      $('#crop-select').selectedIndex = 0;
+      $('#soil-select').selectedIndex = 0;
+      showModal('Crop Added', `<p>Crop <strong>${crop}</strong> added successfully.</p>`);
+    });
+
+    // Upload image and attach to last added crop (demo behaviour)
+    $('#crop-image-form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fileInput = $('#crop-image-upload');
+      const file = fileInput.files[0];
+      if(!file) return alert('Please choose an image file');
+      // Read as base64
+      const reader = new FileReader();
+      reader.onload = function(evt){
+        const data = evt.target.result;
+        // attach to most recent crop (for demo)
+        if(state.crops.length){
+          state.crops[0].imageData = data;
+          saveState();
+          renderCrops();
+          showModal('Image Uploaded', `<p>Image saved for crop <strong>${state.crops[0].crop}</strong>.</p><div style="margin-top:8px"><img src="${data}" alt="crop" style="max-width:100%;border-radius:8px"></div>`);
+          fileInput.value = '';
+        } else {
+          alert('Add a crop first, then upload an image.');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // View and Edit buttons (delegation)
+    document.addEventListener('click', function(e){
+      if(e.target.matches('.view-btn')){
+        const id = e.target.dataset.id;
+        const c = state.crops.find(x=>x.id===id);
+        if(c){
+          const imageHtml = c.imageData ? `<div style="margin-top:8px"><img src="${c.imageData}" alt="crop" style="max-width:100%;border-radius:8px"></div>` : '';
+          showModal(`${c.crop} — Details`, `<p><strong>Soil:</strong> ${c.soil}</p><p><strong>Added:</strong> ${fmtDate(c.addedAt)}</p>${imageHtml}`);
+        }
+      } else if(e.target.matches('.edit-btn')){
+        const id = e.target.dataset.id;
+        const c = state.crops.find(x=>x.id===id);
+        if(c){
+          const newSoil = prompt('Enter new soil type', c.soil);
+          if(newSoil){
+            c.soil = newSoil;
+            saveState();
+            renderCrops();
+            showModal('Updated', `<p>Soil for <strong>${c.crop}</strong> updated to <strong>${c.soil}</strong>.</p>`);
+          }
+        }
+      }
+    });
+
+    /* ===========================
+       RECOMMENDATIONS (simple rules)
+       =========================== */
+    $('#get-fertilizer-btn').addEventListener('click', ()=>{
+      if(!state.crops.length) return alert('Add a crop first for recommendation.');
+      const crop = state.crops[0].crop.toLowerCase();
+      let msg = '';
+      if(crop.includes('wheat')) msg = 'Use NPK 20:20:0 at sowing and top-dress with Urea after 30 days.';
+      else if(crop.includes('rice')) msg = 'Basal application of 10-20% Nitrogen with balanced P & K recommended.';
+      else if(crop.includes('maize')) msg = 'Apply DAP at planting and 2 top-dressings of urea during growth.';
+      else msg = 'Use balanced N-P-K and perform soil test for exact requirement.';
+      $('#fertilizer-recommendation').innerText = msg;
+      showModal('Fertilizer Recommendation', `<p>${msg}</p>`);
+    });
+
+    $('#get-pesticide-btn').addEventListener('click', ()=>{
+      if(!state.crops.length) return alert('Add a crop first for pesticide suggestion.');
+      const crop = state.crops[0].crop.toLowerCase();
+      let msg = '';
+      if(crop.includes('wheat')) msg = 'Watch for aphids; use appropriate insecticide adhering to label. Practice IPM.';
+      else if(crop.includes('rice')) msg = 'Monitor for blast & stem borer; follow local advisories for safe pesticides.';
+      else msg = 'Identify the pest first; prefer biological control and low-toxicity sprays.';
+      $('#pesticide-recommendation').innerText = msg;
+      showModal('Pesticide Recommendation', `<p>${msg}</p>`);
+    });
+
+    $('#get-time-btn').addEventListener('click', ()=>{
+      if(!state.crops.length) return alert('Add a crop first for time recommendation.');
+      const crop = state.crops[0].crop.toLowerCase();
+      let msg = '';
+      if(crop.includes('wheat')) msg = 'Sowing: Oct-Nov. Harvest: Mar-Apr.';
+      else if(crop.includes('rice')) msg = 'Sowing/Transplant: Jun-Jul (Kharif). Harvest: Sep-Oct.';
+      else msg = 'Refer to local agricultural extension for best sowing months.';
+      $('#time-recommendation').innerText = msg;
+      showModal('Planting & Harvesting Time', `<p>${msg}</p>`);
+    });
+
+    // Crop finder by soil/temp
+    $('#crop-recommendation-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const soil = $('#recommend-soil').value;
+      const temp = parseInt($('#recommend-temp').value);
+      const results = [];
+      if(soil.includes('Loamy') && temp>=20 && temp<=30) results.push('Wheat, Maize, Sunflower');
+      if(soil.includes('Clay') && temp>=20 && temp<=30) results.push('Rice, Sugarcane');
+      if(soil.includes('Sandy') && temp>=25) results.push('Groundnut, Millets');
+      if(!results.length) results.push('No exact match — check local recommendations.');
+      $('#crop-recommendation-result').innerText = results.join('; ');
+      showModal('Crop Suggestions', `<p>${results.join('; ')}</p>`);
+    });
+
+    /* ===========================
+       DISEASE DETECTION (Demo rules)
+       =========================== */
+    $('#disease-detection-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const symptom = $('#disease-symptoms').value;
+      const custom = $('#custom-symptoms').value.trim();
+      let msg = '';
+      if(custom){
+        msg = `Based on description: <strong>${custom}</strong>. Advice: take sample to local KVK or extension officer.`;
+      } else if(symptom==='yellow leaves') msg = 'Yellow leaves: possible nutrient deficiency (N). Do soil test and consider N top-up.';
+      else if(symptom==='white powdery coating') msg = 'White powdery: likely powdery mildew. Use recommended fungicide and remove infected parts.';
+      else if(symptom==='wilting') msg = 'Wilting: could be water stress or root disease. Inspect root & soil moisture.';
+      else msg = 'No symptom selected — please describe or upload image.';
+      $('#disease-detection-result').innerText = msg;
+      showModal('Disease Detection', `<p>${msg}</p>`);
+    });
+
+    $('#clear-disease').addEventListener('click', ()=>{
+      $('#disease-symptoms').selectedIndex = 0;
+      $('#custom-symptoms').value = '';
+      $('#disease-detection-result').innerText = '';
+    });
+
+    /* ===========================
+       VALUE ADDITION
+       =========================== */
+    $('#value-addition-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const crop = $('#value-crop').value;
+      const area = parseFloat($('#land-area').value || 0);
+      if(!crop) return alert('Select a crop');
+      let ideas = [];
+      if(crop==='Wheat') ideas = ['Make packaged flour', 'Seed production', 'Contract with millers'];
+      else if(crop==='Tomato') ideas = ['Tomato paste/puree', 'Sun-dried tomatoes', 'Cold storage supply to retailers'];
+      else if(crop==='Millets') ideas = ['Millet flour (gluten-free)', 'Health snack products'];
+      else ideas = ['Small-scale processing', 'Direct-to-consumer sale', 'Farmer producer organization'];
+
+      let out = `<p>Value addition ideas for <strong>${crop}</strong>:</p><ul>`;
+      ideas.forEach(it => out += `<li>${it}</li>`);
+      out += `</ul><p class="muted">Recommended for approx area: ${area} ha</p>`;
+      $('#value-addition-result').innerHTML = out;
+      showModal('Value Addition Ideas', out);
+    });
+
+    /* ===========================
+       TESTING BUTTONS (show modal with steps)
+       =========================== */
+    const testingMap = {
+      'soil-testing-btn': {
+        title: 'Soil Testing — Steps',
+        content: `<ol>
+                    <li>Collect soil from 5-6 spots at 0-15 cm depth.</li>
+                    <li>Mix samples in clean bucket and air-dry.</li>
+                    <li>Take ~500 g & send to nearest soil testing lab / KVK.</li>
+                    <li>Use lab report to decide fertilizer dose.</li>
+                  </ol>`
+      },
+      'ph-testing-btn': {
+        title: 'pH Testing — Steps',
+        content: `<ol>
+                    <li>Take a clean soil sample.</li>
+                    <li>Use a pH meter or pH strips on soil-water mix (1:2.5 ratio).</li>
+                    <li>pH &lt; 6: add lime; pH &gt; 7.5: consider sulfur (follow expert advice).</li>
+                  </ol>`
+      },
+      'moisture-testing-btn': {
+        title: 'Moisture Testing — Steps',
+        content: `<ol>
+                    <li>Weigh a small moist soil (W1).</li>
+                    <li>Dry in sun/oven and weigh again (W2).</li>
+                    <li>Moisture % = ((W1-W2)/W2)*100.</li>
+                    <li>Alternatively use a moisture meter for field use.</li>
+                  </ol>`
+      },
+      'nutrient-testing-btn': {
+        title: 'Nutrient Testing — Steps',
+        content: `<ol>
+                    <li>Collect composite soil sample and send to lab.</li>
+                    <li>Request N, P, K and micronutrient analysis.</li>
+                    <li>Follow lab recommendations for fertilizer application.</li>
+                  </ol>`
+      },
+      'pesticide-testing-btn': {
+        title: 'Pesticide Testing — Steps',
+        content: `<ol>
+                    <li>Record pesticide used and application date.</li>
+                    <li>For residue testing, send crop sample to accredited lab.</li>
+                    <li>Use only labeled pesticides and observe pre-harvest interval (PHI).</li>
+                  </ol>`
+      }
+    };
+
+    Object.keys(testingMap).forEach(btnId=>{
+      const btn = document.getElementById(btnId);
+      if(btn){
+        btn.addEventListener('click', ()=>{
+          const t = testingMap[btnId];
+          showModal(t.title, t.content + `<p class="muted">For kits & further help, contact local KVK or agriculture office.</p>`);
+        });
+      }
+    });
+
+    /* ===========================
+       MARKET PRICES (DEMO)
+       =========================== */
+    $('#get-prices-btn').addEventListener('click', ()=>{
+      // Demo dataset
+      const prices = [
+        {crop:'Wheat', price:2200},
+        {crop:'Rice', price:2600},
+        {crop:'Maize', price:1850},
+        {crop:'Potato', price:900},
+      ];
+      let html = '<table><thead><tr><th>Crop</th><th>Price (₹/quintal)</th></tr></thead><tbody>';
+      prices.forEach(p=> html += `<tr><td>${p.crop}</td><td>${p.price}</td></tr>`);
+      html += '</tbody></table>';
+      $('#prices-list').innerHTML = html;
+      showModal('Market Prices (Demo)', `<p>Latest sample market prices:</p>${html}`);
+    });
+
+    /* ===========================
+       HELP / QUICK GUIDE
+       =========================== */
+    $('#help-btn').addEventListener('click', ()=>{
+      const html = `<p class="muted">Quick Guide:</p>
+                    <ul>
+                      <li>Use Crop Tracker to save crops you manage.</li>
+                      <li>Perform soil test before heavy fertilizer use.</li>
+                      <li>Use weather info before sowing/harvesting.</li>
+                      <li>Contact KVK for professional advice and seeds.</li>
+                    </ul>`;
+      showModal('Quick Guide', html);
+    });
+
+    /* ===========================
+       Small UX features
+       =========================== */
+    // Close modal when click outside
+    modal.addEventListener('click', function(e){
+      if(e.target === modal) closeModal();
+    });
+
+    // Close modal with ESC
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') closeModal();
+    });
+
+    /* ===========================
+       GOOGLE TRANSLATE (widget)
+       Note: this loads Google's translate script (external)
+       For offline demo, widget will show if connected.
+       =========================== */
+    function loadGoogleTranslate(){
+      // The script tag is included below; callback will call this under window scope
+      if(window.google && google.translate){
+        new google.translate.TranslateElement({
+          pageLanguage:'en',
+          includedLanguages:'hi,mr,ta,te,kn,ml,gu,bn,pa,en',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_element');
+      }
+    }
+
+    // Expose for callback
+    window.loadGoogleTranslate = loadGoogleTranslate;
+
+    /* ===========================
+       INIT small tasks
+       =========================== */
+    // show local status
+    $('#local-status').innerText = (typeof(Storage) !== "undefined") ? 'Yes' : 'No';
+
+    // preload some demo crops for first time users
+    (function preloadDemo(){
+      if(!state.crops.length){
+        state.crops = [
+          {id:genId(), crop:'Wheat', soil:'Loamy', imageData:null, notes:'Demo crop', addedAt: Date.now()-86400000},
+          {id:genId(), crop:'Tomato', soil:'Sandy', imageData:null, notes:'Demo crop', addedAt: Date.now()-3600000}
+        ];
+        saveState();
+      }
+      renderCrops();
+    })();
+
+    /* ===========================
+       END OF SCRIPT
+       =========================== */
+  </script>
+
+  <!-- Google Translate API (loads if internet available). The callback calls loadGoogleTranslate -->
+  <script src="https://translate.google.com/translate_a/element.js?cb=loadGoogleTranslate"></script>
+
+</body>
+</html>
